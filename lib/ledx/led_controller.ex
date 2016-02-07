@@ -1,7 +1,7 @@
 defmodule Ledx.LedController do
   use GenServer
 
-  defstruct [:name, :module, :config, state: :off, loop_type: :generic, loop: nil]
+  defstruct [:name, :module, :config, state: :off, loop_type: :generic]
 
   def start_link(led_name, module, config) do
     GenServer.start_link(__MODULE__, {led_name, module, config}, [name: led_name])
@@ -53,19 +53,29 @@ defmodule Ledx.LedController do
   end
 
   def handle_cast({:loop, on, off}, %__MODULE__{module: module, loop_type: :callback} = state) do
-    {:noreply, module.loop(state, on, off)}
+    new_config = Map.put(state.config, :loop, %{on: on, off: off})
+
+    state = %{state |
+      config: module.loop(new_config, on, off),
+      state: :loop
+    }
+    {:noreply, state}
   end
 
-  def handle_cast({:loop, on, off}, %__MODULE__{module: module, loop_type: :generic} = state) do
-    {:noreply, %{state | loop: %{on: on, off: off}}, 0}
+  def handle_cast({:loop, on, off}, %__MODULE__{loop_type: :generic} = state) do
+    new_config = Map.put(state.config, :loop, %{on: on, off: off})
+    Process.send_after(self, :loop, 0)
+    {:noreply, %{state | config: new_config}}
   end
 
-  def handle_info(:timeout, %__MODULE__{module: module, state: :on, loop: %{off: timeout}} = state) do
-    {:noreply, do_turn_off(state), timeout}
+  def handle_info(:loop, %__MODULE__{state: :on, config: %{loop: %{off: timeout}}} = state) do
+    Process.send_after(self, :loop, timeout)
+    {:noreply, do_turn_off(state)}
   end
 
-  def handle_info(:timeout, %__MODULE__{module: module, state: :off, loop: %{on: timeout}} = state) do
-    {:noreply, do_turn_on(state), timeout}
+  def handle_info(:loop, %__MODULE__{state: :off, config: %{loop: %{on: timeout}}} = state) do
+    Process.send_after(self, :loop, timeout)
+    {:noreply, do_turn_on(state)}
   end
 
   defp do_toggle(%__MODULE__{state: :on} = state) do
@@ -77,10 +87,16 @@ defmodule Ledx.LedController do
   end
 
   defp do_turn_on(%__MODULE__{module: module} = state) do
-    %{module.on(state) | state: :on}
+    %{state |
+      config: module.on(state.config),
+      state: :on
+    }
   end
 
   defp do_turn_off(%__MODULE__{module: module} = state) do
-    %{module.off(state) | state: :off}
+    %{state |
+      config: module.off(state.config),
+      state: :off
+    }
   end
 end

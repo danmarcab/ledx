@@ -4,18 +4,14 @@ defmodule Ledx.LedControllerTest do
   alias Ledx.LedController
 
   defmodule TestLed do
-    def on(state) do
-      send(state.config.caller, :on)
-      state
+    def on(config) do
+      send(config.caller, :on)
+      config
     end
 
-    def off(state) do
-      send(state.config.caller, :off)
-      state
-    end
-
-    def loop_type do
-      :generic
+    def off(config) do
+      send(config.caller, :off)
+      config
     end
   end
 
@@ -47,15 +43,15 @@ defmodule Ledx.LedControllerTest do
   test "loop on/off" do
     LedController.loop(:test_led, 50, 100)
     assert_receive :on
-    # assert LedController.state(:test_led) == :on
+    assert LedController.state(:test_led) == :on
     refute_receive :off, 49
     assert_receive :off, 5
-    # assert LedController.state(:test_led) == :off
+    assert LedController.state(:test_led) == :off
     refute_receive :on, 99
     assert_receive :on, 5
-    # assert LedController.state(:test_led) == :on
+    assert LedController.state(:test_led) == :on
     refute_receive :off, 49
     assert_receive :off, 5
-    # assert LedController.state(:test_led) == :off
+    assert LedController.state(:test_led) == :off
   end
 end
