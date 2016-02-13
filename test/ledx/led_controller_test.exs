@@ -4,6 +4,12 @@ defmodule Ledx.LedControllerTest do
   alias Ledx.LedController
 
   defmodule TestLed do
+    @behaviour Ledx.Led
+
+    def init(config) do
+      config
+    end
+
     def on(config) do
       send(config.caller, :on)
       config

@@ -1,13 +1,14 @@
 defmodule Ledx.LedController do
   use GenServer
 
-  defstruct [:name, :module, :config, state: :off, loop_type: :generic]
+  defstruct [:name, :module, :config, state: :off, loop_type: :generic, timer: nil]
 
   def start_link(led_name, module, config) do
     GenServer.start_link(__MODULE__, {led_name, module, config}, [name: led_name])
   end
 
   def init({name, module, config}) do
+    config = Map.merge(config, module.init(config))
     state = %__MODULE__{name: name, module: module, config: config}
     {:ok, state}
   end
@@ -40,15 +41,18 @@ defmodule Ledx.LedController do
     {:reply, current_state, state}
   end
 
-  def handle_cast(:on, %__MODULE__{} = state) do
+  def handle_cast(:on, %__MODULE__{timer: timer} = state) do
+    if timer, do: Process.cancel_timer(timer)
     {:noreply, do_turn_on(state)}
   end
 
-  def handle_cast(:off, %__MODULE__{} = state) do
+  def handle_cast(:off, %__MODULE__{timer: timer} = state) do
+    if timer, do: Process.cancel_timer(timer)
     {:noreply, do_turn_off(state)}
   end
 
-  def handle_cast(:toggle, %__MODULE__{} = state) do
+  def handle_cast(:toggle, %__MODULE__{timer: timer} = state) do
+    if timer, do: Process.cancel_timer(timer)
     {:noreply, do_toggle(state)}
   end
 
@@ -62,20 +66,23 @@ defmodule Ledx.LedController do
     {:noreply, state}
   end
 
-  def handle_cast({:loop, on, off}, %__MODULE__{loop_type: :generic} = state) do
+  def handle_cast({:loop, on, off}, %__MODULE__{loop_type: :generic, timer: timer} = state) do
     new_config = Map.put(state.config, :loop, %{on: on, off: off})
-    Process.send_after(self, :loop, 0)
-    {:noreply, %{state | config: new_config}}
+    if timer, do: Process.cancel_timer(timer)
+    timer = Process.send_after(self, :loop, 0)
+    {:noreply, %{state | config: new_config, timer: timer}}
   end
 
-  def handle_info(:loop, %__MODULE__{state: :on, config: %{loop: %{off: timeout}}} = state) do
-    Process.send_after(self, :loop, timeout)
-    {:noreply, do_turn_off(state)}
+  def handle_info(:loop, %__MODULE__{state: :on, timer: timer, config: %{loop: %{off: timeout}}} = state) do
+    if timer, do: Process.cancel_timer(timer)
+    timer = Process.send_after(self, :loop, timeout)
+    {:noreply, do_turn_off(%{state | timer: timer})}
   end
 
-  def handle_info(:loop, %__MODULE__{state: :off, config: %{loop: %{on: timeout}}} = state) do
-    Process.send_after(self, :loop, timeout)
-    {:noreply, do_turn_on(state)}
+  def handle_info(:loop, %__MODULE__{state: :off, timer: timer, config: %{loop: %{on: timeout}}} = state) do
+    if timer, do: Process.cancel_timer(timer)
+    timer = Process.send_after(self, :loop, timeout)
+    {:noreply, do_turn_on(%{state | timer: timer})}
   end
 
   defp do_toggle(%__MODULE__{state: :on} = state) do
