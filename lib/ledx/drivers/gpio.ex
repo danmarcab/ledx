@@ -1,5 +1,5 @@
-defmodule Ledx.Led.GpioLed do
-  @behaviour Ledx.Led
+defmodule Ledx.Drivers.Gpio do
+  @behaviour Ledx.Driver
 
   def init(%{pin: n} = config) do
     {:ok, pid} = Gpio.start_link(n, :output)
