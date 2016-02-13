@@ -1,7 +1,7 @@
 defmodule Ledx.LedController do
   use GenServer
 
-  defstruct [:name, :module, :config, state: :off, loop_type: :generic, timer: nil]
+  defstruct [:name, :module, :config, state: :off, timer: nil]
 
   def start_link(led_name, module, config) do
     GenServer.start_link(__MODULE__, {led_name, module, config}, [name: led_name])
@@ -56,17 +56,7 @@ defmodule Ledx.LedController do
     {:noreply, do_toggle(state)}
   end
 
-  def handle_cast({:loop, on, off}, %__MODULE__{module: module, loop_type: :callback} = state) do
-    new_config = Map.put(state.config, :loop, %{on: on, off: off})
-
-    state = %{state |
-      config: module.loop(new_config, on, off),
-      state: :loop
-    }
-    {:noreply, state}
-  end
-
-  def handle_cast({:loop, on, off}, %__MODULE__{loop_type: :generic, timer: timer} = state) do
+  def handle_cast({:loop, on, off}, %__MODULE__{timer: timer} = state) do
     new_config = Map.put(state.config, :loop, %{on: on, off: off})
     if timer, do: Process.cancel_timer(timer)
     timer = Process.send_after(self, :loop, 0)
