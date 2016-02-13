@@ -11,14 +11,16 @@ defmodule Ledx.Led do
   def state(led), do: GenServer.call(led, :state)
 
   def turn_on(led), do: GenServer.cast(led, :on)
+  def turn_on(led, time), do: GenServer.cast(led, {:on, time})
 
   def turn_off(led), do: GenServer.cast(led, :off)
+  def turn_off(led, time), do: GenServer.cast(led, {:off, time})
 
   def toggle(led), do: GenServer.cast(led, :toggle)
+  def toggle(led, time), do: GenServer.cast(led, {:toggle, time})
 
-  def loop(led, on_off), do: loop(led, on_off, on_off)
-
-  def loop(led, on, off), do: GenServer.cast(led, {:loop, on, off})
+  def blink(led, on_off), do: blink(led, on_off, on_off)
+  def blink(led, on, off), do: GenServer.cast(led, {:blink, on, off})
 
   def alive(led, time), do: GenServer.cast(led, {:alive, time})
 
@@ -41,34 +43,34 @@ defmodule Ledx.Led do
     |> noreply
   end
 
-  def handle_cast({:loop, on, off}, %__MODULE__{} = state) do
+  def handle_cast({action, time}, %__MODULE__{} = state) when action in @atomic_actions do
     state
     |> cancel_timer
-    |> schedule({:loop, on, off}, 0)
+    |> schedule(:toggle, time)
+    |> perform(action)
+    |> noreply
+  end
+
+  def handle_cast({:blink, on, off}, %__MODULE__{} = state) do
+    state
+    |> cancel_timer
+    |> schedule({:blink, on, off}, 0)
     |> do_turn(:off)
     |> noreply
   end
 
-  def handle_cast({:alive, time}, %__MODULE__{} = state) do
+  def handle_info({:blink, time, next_time}, %__MODULE__{} = state) do
     state
     |> cancel_timer
-    |> schedule(:alive, time)
-    |> do_turn(:on)
-    |> noreply
-  end
-
-  def handle_info({:loop, time, next_time}, %__MODULE__{} = state) do
-    state
-    |> cancel_timer
-    |> schedule({:loop, next_time, time}, time)
+    |> schedule({:blink, next_time, time}, time)
     |> do_toggle
     |> noreply
   end
 
-  def handle_info(:alive, %__MODULE__{} = state) do
+  def handle_info(:toggle, %__MODULE__{} = state) do
     state
     |> cancel_timer
-    |> do_turn(:off)
+    |> do_toggle
     |> noreply
   end
 

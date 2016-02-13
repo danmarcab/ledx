@@ -46,9 +46,55 @@ defmodule Ledx.LedTest do
     assert Led.state(:test_led) == :off
   end
 
-  test "loop on/off" do
+  test "pulse on" do
     assert Led.state(:test_led) == :off
-    Led.loop(:test_led, 50, 100)
+    Led.turn_on(:test_led, 100)
+    assert_receive :on
+    assert Led.state(:test_led) == :on
+    refute_receive :off, 90
+    assert_receive :off
+    assert Led.state(:test_led) == :off
+  end
+
+  test "pulse off" do
+    Led.turn_on(:test_led)
+    assert_receive :on
+
+    assert Led.state(:test_led) == :on
+    Led.turn_off(:test_led, 100)
+    assert_receive :off
+    assert Led.state(:test_led) == :off
+    refute_receive :on, 90
+    assert_receive :on
+    assert Led.state(:test_led) == :on
+  end
+
+  test "pulse toggle when off" do
+    assert Led.state(:test_led) == :off
+    Led.toggle(:test_led, 100)
+    assert_receive :on
+    assert Led.state(:test_led) == :on
+    refute_receive :off, 90
+    assert_receive :off
+    assert Led.state(:test_led) == :off
+  end
+
+  test "pulse toggle when on" do
+    Led.turn_on(:test_led)
+    assert_receive :on
+
+    assert Led.state(:test_led) == :on
+    Led.toggle(:test_led, 100)
+    assert_receive :off
+    assert Led.state(:test_led) == :off
+    refute_receive :on, 90
+    assert_receive :on
+    assert Led.state(:test_led) == :on
+  end
+
+  test "blink loop" do
+    assert Led.state(:test_led) == :off
+    Led.blink(:test_led, 50, 100)
     assert_receive :on
     assert Led.state(:test_led) == :on
     refute_receive :off, 49
@@ -59,20 +105,6 @@ defmodule Ledx.LedTest do
     assert Led.state(:test_led) == :on
     refute_receive :off, 49
     assert_receive :off, 5
-    assert Led.state(:test_led) == :off
-  end
-
-  test "keep alive" do
-    assert Led.state(:test_led) == :off
-    Led.alive(:test_led, 50)
-    assert_receive :on
-    assert Led.state(:test_led) == :on
-    refute_receive :off, 40
-    Led.alive(:test_led, 50)
-    refute_receive :on, 10
-    assert Led.state(:test_led) == :on
-    refute_receive :off, 30
-    assert_receive :off, 20
     assert Led.state(:test_led) == :off
   end
 end
