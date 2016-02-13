@@ -47,6 +47,7 @@ defmodule Ledx.LedControllerTest do
   end
 
   test "loop on/off" do
+    assert LedController.state(:test_led) == :off
     LedController.loop(:test_led, 50, 100)
     assert_receive :on
     assert LedController.state(:test_led) == :on
@@ -58,6 +59,20 @@ defmodule Ledx.LedControllerTest do
     assert LedController.state(:test_led) == :on
     refute_receive :off, 49
     assert_receive :off, 5
+    assert LedController.state(:test_led) == :off
+  end
+
+  test "keep alive" do
+    assert LedController.state(:test_led) == :off
+    LedController.alive(:test_led, 50)
+    assert_receive :on
+    assert LedController.state(:test_led) == :on
+    refute_receive :off, 40
+    LedController.alive(:test_led, 50)
+    refute_receive :on, 10
+    assert LedController.state(:test_led) == :on
+    refute_receive :off, 30
+    assert_receive :off, 20
     assert LedController.state(:test_led) == :off
   end
 end
