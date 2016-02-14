@@ -22,8 +22,6 @@ defmodule Ledx.Led do
   def blink(led, on_off), do: blink(led, on_off, on_off)
   def blink(led, on, off), do: GenServer.cast(led, {:blink, on, off})
 
-  def alive(led, time), do: GenServer.cast(led, {:alive, time})
-
   # GenServer callbacks
 
   def init({name, module, config}) do

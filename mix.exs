@@ -7,6 +7,7 @@ defmodule Ledx.Mixfile do
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     elixirc_paths: elixirc_paths(Mix.env),
      description: description,
      package: package,
      deps: deps]
@@ -16,9 +17,15 @@ defmodule Ledx.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:elixir_ale],
+    [applications: applications(Mix.env),
      mod: {Ledx, []}]
   end
+
+  def applications(:test), do: []
+  def applications(_), do: [:elixir_ale]
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_),     do: ["lib"]
 
   # Dependencies can be Hex packages:
   #
@@ -30,8 +37,11 @@ defmodule Ledx.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:elixir_ale, "~> 0.4.0"}]
+    deps(Mix.env)
   end
+
+  defp deps(:test), do: []
+  defp deps(_), do: [{:elixir_ale, "~> 0.4.0"}]
 
   defp description do
     """
