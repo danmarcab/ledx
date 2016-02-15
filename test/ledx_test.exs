@@ -92,7 +92,7 @@ defmodule LedxTest do
     assert_receive :off, 5
     assert Ledx.state(:test_led) == :off
   end
-  
+
   test "starts leds from config" do
     assert Ledx.state(:config_test_led) == :off
     assert Ledx.turn_on(:config_test_led)

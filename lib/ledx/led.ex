@@ -1,4 +1,6 @@
 defmodule Ledx.Led do
+  @moduledoc false
+
   use GenServer
 
   @atomic_actions [:on, :off, :toggle]

@@ -156,7 +156,3 @@ config :ledx, leds:
   [{:led1, MyDriver, %{path: "/dev/led/led1"}},
    {:led2, MyDriver, %{path: "/dev/led/led2"}}]
 ```
-
-## TODO
-
-* docs
