@@ -107,6 +107,10 @@ Ledx.blink(:my_led, 100, 50)
 # ...
 ```
 
+## Examples
+
+You can find examples in the `examples` directory.
+
 ## Advanced
 
 ### Implementing you own drivers
@@ -156,4 +160,3 @@ config :ledx, leds:
 ## TODO
 
 * docs
-* example app
