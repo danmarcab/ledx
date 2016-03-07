@@ -61,11 +61,11 @@ Ledx.turn_off(:my_led)
 # the led is off
 ```
 
-We could also toogle it:
+We could also toggle it:
 ```elixir
-Ledx.toogle(:my_led)
+Ledx.toggle(:my_led)
 # the led is on
-Ledx.toogle(:my_led)
+Ledx.toggle(:my_led)
 # the led is off
 ```
 
